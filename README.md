@@ -18,7 +18,7 @@ An advanced machine learning system designed to detect and classify hate speech 
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/HateSpeechDetector.git
+git clone https://github.com/PranavKumarNarayanan/HateSpeechDetector.git
 cd HateSpeechDetector
 ```
 
@@ -60,8 +60,21 @@ python online_dataset_collector.py
 This tool is designed to responsibly identify harmful language while minimizing bias.
 
 ## 📜 License
-[Choose an appropriate license, e.g., MIT]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### MIT License Highlights
+- ✅ Commercial use
+- ✅ Modification
+- ✅ Distribution
+- ✅ Private use
+- ❌ Liability
+- ❌ Warranty
 
 ## 🙏 Acknowledgments
 - Inspired by research in NLP and hate speech detection
 - Dataset sources: Kaggle Hate Speech Dataset
+
+## 📞 Contact
+Pranav Kumar Narayanan - pranavkumarsankar@gmail.com
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
