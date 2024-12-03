@@ -3,6 +3,13 @@
 ## Overview
 An advanced machine learning system designed to detect and classify hate speech in social media comments using Python and scikit-learn.
 
+## 🎓 Academic Project
+- **Course:** Computational Problem Solving
+- **Faculty Mentor:** Thannamal Indu V
+- **Academic Year:** First Year Project
+
+This project was developed as part of the Computational Problem Solving curriculum, exploring the intersection of machine learning, natural language processing, and social media analysis.
+
 ## 🌟 Features
 - Advanced text preprocessing
 - Machine learning-based hate speech classification
@@ -73,6 +80,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 - Inspired by research in NLP and hate speech detection
 - Dataset sources: Kaggle Hate Speech Dataset
+- Guided by Faculty Mentor: Thannamal Indu V
 
 ## 📞 Contact
 Pranav Kumar Narayanan - pranavkumarsankar@gmail.com
