@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hate Speech Detection System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Intelligent Hate Speech Detection System</h1>
+            <nav>
+                <ul>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#visualizations">Visualizations</a></li>
+                    <li><a href="#github">GitHub</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="about" class="section">
+            <div class="container">
+                <h2>Project Overview</h2>
+                <p>An advanced machine learning system designed to detect and classify harmful language in social media comments using state-of-the-art natural language processing techniques.</p>
+                
+                <div class="key-stats">
+                    <div class="stat">
+                        <h3>78.85%</h3>
+                        <p>Validation Accuracy</p>
+                    </div>
+                    <div class="stat">
+                        <h3>2,860</h3>
+                        <p>Training Samples</p>
+                    </div>
+                    <div class="stat">
+                        <h3>50/50</h3>
+                        <p>Balanced Dataset</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="section">
+            <div class="container">
+                <h2>Key Features</h2>
+                <div class="feature-grid">
+                    <div class="feature">
+                        <h3>Machine Learning</h3>
+                        <p>Advanced logistic regression with calibrated classification</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Text Preprocessing</h3>
+                        <p>Robust cleaning and normalization of text data</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Visualization</h3>
+                        <p>Comprehensive model performance analysis tools</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Multi-Platform</h3>
+                        <p>Works across Windows, macOS, and Linux</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="visualizations" class="section">
+            <div class="container">
+                <h2>Model Performance Visualizations</h2>
+                <div class="visualization-grid">
+                    <div class="visualization">
+                        <img src="visualizations/confusion_matrix.png" alt="Confusion Matrix">
+                        <h3>Confusion Matrix</h3>
+                    </div>
+                    <div class="visualization">
+                        <img src="visualizations/roc_curve.png" alt="ROC Curve">
+                        <h3>ROC Curve</h3>
+                    </div>
+                    <div class="visualization">
+                        <img src="visualizations/feature_importance.png" alt="Feature Importance">
+                        <h3>Feature Importance</h3>
+                    </div>
+                    <div class="visualization">
+                        <img src="visualizations/class_distribution.png" alt="Class Distribution">
+                        <h3>Class Distribution</h3>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="github" class="section">
+            <div class="container">
+                <h2>Get Started</h2>
+                <div class="cta-buttons">
+                    <a href="https://gitlab.com/pranavkumarnarayanan/HateSpeechDetector" class="btn btn-primary">View on GitLab</a>
+                    <a href="https://gitlab.com/pranavkumarnarayanan/HateSpeechDetector/-/wiki" class="btn btn-secondary">Read Documentation</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2023 Hate Speech Detection System. All rights reserved.</p>
+            <p>Created by Pranav Kumar Narayanan</p>
+        </div>
+    </footer>
+
+    <script>
+        // Simple interactive elements
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

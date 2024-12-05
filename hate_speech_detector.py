@@ -1,240 +1,235 @@
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.calibration import CalibratedClassifierCV
 import re
 import os
+from typing import Dict, List, Tuple, Optional
 
 class HateSpeechDetector:
-    def __init__(self, dataset_path=None):
-        # Default hardcoded training data
-        self.training_data = {
-            'text': [
-                # Explicit Violent Threats
-                'kill her',
-                'she doesnt deserve a place in this world',
-                'I want to kill you',
-                'die already',
-                'you should not exist',
-                'I hope you get hurt',
-                'someone should end your life',
-                
-                # Dehumanizing Language
-                'you are less than human',
-                'worthless piece of trash',
-                'you dont deserve to live',
-                'world would be better without you',
-                'you are a waste of space',
-                
-                # Gender-based Hate
-                'women are useless',
-                'she is only good for one thing',
-                'females are inferior',
-                'women should know their place',
-                
-                # Racial and Discriminatory Comments
-                'your kind is a problem',
-                'go back to your country',
-                'you dont belong here',
-                'all of your people are the same',
-                
-                # Explicit Hate Speech
-                'I hate you',
-                'you are garbage',
-                'nobody wants you here',
-                'you are disgusting',
-                
-                # Non-Hate Speech Examples - General Positive
-                'Great weather today!',
-                'I love this community',
-                'Everyone deserves respect',
-                'Let\'s work together',
-                'You are awesome',
-                'What a beautiful day',
-                'Welcome everyone',
-                'I appreciate your help',
-                'Thank you for your kindness',
-                'This is a wonderful place',
-                
-                # Non-Hate Speech - Compliments
-                'I love your outfit',
-                'Your hair looks amazing',
-                'That dress suits you perfectly',
-                'You have a beautiful smile',
-                'Your style is fantastic',
-                'You look great today',
-                'Nice choice of colors',
-                'That looks good on you',
-                'You have great taste',
-                'Love what you did there',
-                
-                # Non-Hate Speech - Supportive Comments
-                'Keep up the good work',
-                'You can do this',
-                'I believe in you',
-                'You\'re making progress',
-                'That\'s a great idea',
-                'Well done',
-                'Proud of you',
-                'You\'re doing great',
-                'Thanks for sharing',
-                'This is inspiring'
-            ],
-            'label': [
-                # Hate Speech Labels
-                1, 1, 1, 1, 1, 1, 1,  # Violent Threats
-                1, 1, 1, 1, 1,  # Dehumanizing Language
-                1, 1, 1, 1,  # Gender-based Hate
-                1, 1, 1, 1,  # Racial Comments
-                1, 1, 1, 1,  # Explicit Hate
-                
-                # Non-Hate Speech Labels - General Positive
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                
-                # Non-Hate Speech - Compliments
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                
-                # Non-Hate Speech - Supportive Comments
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-            ]
-        }
+    def __init__(self):
+        """Initialize the hate speech detector with Twitter dataset"""
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.dataset_path = os.path.join(self.base_dir, 'datasets/processed_dataset.csv')
         
-        # Load additional dataset if provided
-        if dataset_path and os.path.exists(dataset_path):
-            try:
-                df = pd.read_csv(dataset_path)
-                
-                # Ensure the dataframe has 'text' and 'label' columns
-                if 'text' in df.columns and 'label' in df.columns:
-                    # Extend training data with new dataset
-                    self.training_data['text'].extend(df['text'].tolist())
-                    self.training_data['label'].extend(df['label'].tolist())
-                    print(f"Loaded additional {len(df)} samples from {dataset_path}")
-                else:
-                    print(f"Warning: Dataset {dataset_path} does not have required columns")
-            except Exception as e:
-                print(f"Error loading dataset: {e}")
+        # Initialize vectorizer with enhanced parameters
+        self.vectorizer = TfidfVectorizer(
+            max_features=50000,
+            ngram_range=(1, 5),
+            min_df=2,
+            max_df=0.95
+        )
         
-        # Create pipeline with adjusted parameters
-        self.pipeline = Pipeline([
-            ('tfidf', TfidfVectorizer(
-                stop_words='english',
-                ngram_range=(1, 2),
-                max_features=5000,
-                min_df=2  # Minimum document frequency
-            )),
-            ('classifier', MultinomialNB(alpha=0.5))  # Increased smoothing
-        ])
-    
-    def clean_text(self, text):
-        """
-        Advanced text cleaning method
-        """
+        # Initialize model with calibration for better probability estimates
+        self.model = CalibratedClassifierCV(
+            LogisticRegression(
+                class_weight='balanced',
+                random_state=42,
+                max_iter=1000
+            )
+        )
+        
+        self.threshold = 0.35
+        self.hate_dict = self._load_hate_dictionary()
+        
+        # Load and train on the Twitter dataset
+        self.dataset = self._load_dataset()
+        if self.dataset is not None:
+            self.train_model()
+        else:
+            raise ValueError("No dataset available for training")
+
+    def _load_dataset(self) -> pd.DataFrame:
+        """Load the processed Twitter dataset"""
+        try:
+            if os.path.exists(self.dataset_path):
+                df = pd.read_csv(self.dataset_path)
+                print(f"Loaded {len(df)} examples from Twitter dataset")
+                return df
+            else:
+                print("Dataset not found at:", self.dataset_path)
+                return self._get_default_dataset()
+        except Exception as e:
+            print(f"Error loading dataset: {str(e)}")
+            return self._get_default_dataset()
+
+    def _get_default_dataset(self) -> pd.DataFrame:
+        """Fallback dataset if Twitter data is unavailable"""
+        hate_examples = [
+            "I hate all of them, they should die",
+            "You're worthless and deserve to suffer",
+            "Go kill yourself",
+            "All of them are subhuman",
+            "They're nothing but parasites"
+        ]
+        
+        non_hate_examples = [
+            "What a beautiful day!",
+            "I love this movie so much",
+            "Great job on the presentation",
+            "Looking forward to seeing you",
+            "This is really interesting"
+        ]
+        
+        texts = hate_examples + non_hate_examples
+        labels = [1] * len(hate_examples) + [0] * len(non_hate_examples)
+        
+        return pd.DataFrame({
+            'text': texts,
+            'label': labels
+        })
+
+    def _load_hate_dictionary(self) -> Dict[str, float]:
+        """Load the hate speech dictionary"""
+        from online_dataset_collector import DatasetCollector
+        collector = DatasetCollector()
+        return collector.fetch_hate_speech_dictionary()
+
+    def clean_text(self, text: str) -> str:
+        """Clean and preprocess text"""
         if not isinstance(text, str):
             return ""
         
         # Convert to lowercase
         text = text.lower()
         
-        # Remove special characters and numbers but keep apostrophes
-        text = re.sub(r'[^a-zA-Z\s\']', '', text)
+        # Remove URLs
+        text = re.sub(r'https?://\S+|www\.\S+', '', text)
         
-        # Remove extra whitespaces
+        # Remove user mentions
+        text = re.sub(r'@\w+', '', text)
+        
+        # Remove hashtags
+        text = re.sub(r'#\w+', '', text)
+        
+        # Remove HTML tags
+        text = re.sub(r'<.*?>', '', text)
+        
+        # Remove extra whitespace
         text = ' '.join(text.split())
         
-        return text
-    
+        return text.strip()
+
     def train_model(self):
-        """
-        Train the hate speech detection model
-        """
+        """Train the hate speech detection model"""
         # Clean the text data
-        cleaned_texts = [self.clean_text(text) for text in self.training_data['text']]
+        self.dataset['cleaned_text'] = self.dataset['text'].apply(self.clean_text)
         
-        # Split the data
-        X_train, X_test, y_train, y_test = train_test_split(
-            cleaned_texts, 
-            self.training_data['label'], 
-            test_size=0.2, 
+        # Split into training and validation sets
+        from sklearn.model_selection import train_test_split
+        X_train, X_val, y_train, y_val = train_test_split(
+            self.dataset['cleaned_text'],
+            self.dataset['label'],
+            test_size=0.2,
             random_state=42,
-            stratify=self.training_data['label']  # Ensure balanced split
+            stratify=self.dataset['label']
         )
         
-        # Fit the pipeline
-        self.pipeline.fit(X_train, y_train)
+        print("\nTraining model on Twitter dataset...")
+        print(f"Training examples: {len(X_train)}")
+        print(f"Validation examples: {len(X_val)}")
         
-        # Evaluate the model
-        accuracy = self.pipeline.score(X_test, y_test)
-        print(f"Model validation accuracy: {accuracy * 100:.2f}%")
+        # Fit the vectorizer and transform the text
+        print("Vectorizing text...")
+        X_train_vec = self.vectorizer.fit_transform(X_train)
+        X_val_vec = self.vectorizer.transform(X_val)
         
-        return self
-    
-    def predict(self, text):
+        # Train the model
+        print("Training classifier...")
+        self.model.fit(X_train_vec, y_train)
+        
+        # Calculate and print validation accuracy
+        val_accuracy = self.model.score(X_val_vec, y_val)
+        print(f"Validation accuracy: {val_accuracy:.4f}")
+
+    def _calculate_rule_based_score(self, text: str) -> float:
+        """Calculate rule-based hate speech score"""
+        text = text.lower()
+        score = 0.0
+        total_weight = 0.0
+        
+        # Check for hate speech terms and phrases
+        for term, severity in self.hate_dict.items():
+            if term.lower() in text:
+                score += severity
+                total_weight += 1.0
+        
+        # Return normalized score
+        return score / max(total_weight, 1.0)
+
+    def detect_hate_speech(self, text: str) -> Tuple[bool, float, Dict[str, float]]:
         """
-        Predict if text contains hate speech
-        Returns probability of hate speech
+        Detect hate speech in text using both ML and rule-based approaches
+        Returns: (is_hate_speech, probability, details)
         """
-        # Clean the input text
+        # Clean the text
         cleaned_text = self.clean_text(text)
         
-        # Predict probabilities
-        proba = self.pipeline.predict_proba([cleaned_text])[0]
+        # Get ML probability
+        text_vec = self.vectorizer.transform([cleaned_text])
+        ml_prob = self.model.predict_proba(text_vec)[0][1]
         
-        # Return probability of hate speech (second class)
-        return {
-            'hate_speech_probability': proba[1],
-            'is_hate_speech': proba[1] > 0.6  # Increased threshold
+        # Get rule-based score
+        rule_score = self._calculate_rule_based_score(cleaned_text)
+        
+        # Combine probabilities (50% ML, 50% rule-based)
+        final_prob = 0.5 * ml_prob + 0.5 * rule_score
+        
+        # Classify as hate speech if probability exceeds threshold
+        is_hate_speech = final_prob >= self.threshold
+        
+        # Return detailed results
+        details = {
+            'ml_probability': ml_prob,
+            'rule_based_score': rule_score,
+            'final_probability': final_prob,
+            'threshold': self.threshold
         }
+        
+        return is_hate_speech, final_prob, details
 
 def main():
-    # Path to the combined dataset
-    dataset_path = os.path.join(os.path.dirname(__file__), 'combined_hate_speech_dataset.csv')
+    # Initialize detector with Twitter dataset
+    print("Initializing Hate Speech Detector with Twitter dataset...")
+    detector = HateSpeechDetector()
     
-    # Initialize and train the detector with the dataset
-    detector = HateSpeechDetector(dataset_path).train_model()
-    
-    print("\nHate Speech Detection Interactive Tool")
-    print("-------------------------------------")
-    print("Enter comments to analyze. Type 'quit' to exit.")
+    print("\nHate Speech Detector initialized. Enter text to analyze (or 'q' to quit):")
     
     while True:
         try:
-            # Get user input
-            text = input("\nEnter a comment to analyze (or 'quit' to exit): ").strip()
+            # Get input from user
+            text = input("\nEnter text: ").strip()
             
-            # Check for exit condition
-            if text.lower() == 'quit':
-                print("Exiting hate speech detection tool. Goodbye!")
+            # Check for quit command
+            if text.lower() == 'q':
                 break
             
             # Skip empty input
             if not text:
-                print("Please enter some text to analyze.")
                 continue
             
-            # Predict hate speech
-            result = detector.predict(text)
+            # Analyze text
+            is_hate, prob, details = detector.detect_hate_speech(text)
             
-            # Display results
-            print("\n--- Analysis Results ---")
-            print(f"Comment: '{text}'")
-            print(f"Hate Speech Probability: {result['hate_speech_probability']:.2f}")
-            print(f"Is Hate Speech: {result['is_hate_speech']}")
-            
-            # Provide additional context based on probability
-            if result['is_hate_speech']:
-                if result['hate_speech_probability'] > 0.9:
-                    print("WARNING: This comment contains extremely harmful language.")
-                elif result['hate_speech_probability'] > 0.7:
-                    print("CAUTION: This comment contains potentially offensive content.")
+            # Print results
+            print("\nAnalysis Results:")
+            print(f"Text: {text}")
+            print(f"Is Hate Speech: {is_hate}")
+            print(f"Confidence: {prob:.2%}")
+            print("\nDetailed Scores:")
+            print(f"- ML Model Score: {details['ml_probability']:.2%}")
+            print(f"- Rule-based Score: {details['rule_based_score']:.2%}")
+            print(f"- Final Score: {details['final_probability']:.2%}")
+            print(f"- Threshold: {details['threshold']:.2%}")
             
         except KeyboardInterrupt:
-            print("\nOperation cancelled by user.")
             break
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            print(f"Error: {str(e)}")
+            continue
+    
+    print("\nThank you for using the Hate Speech Detector!")
 
 if __name__ == "__main__":
     main()
